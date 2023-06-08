@@ -13,7 +13,7 @@ namespace Bitmotion\Mautic\Service;
  *  (c) 2023 Leuchtfeuer Digital Marketing <dev@leuchtfeuer.com>
  *
  ***/
-
+use TYPO3\CMS\Core\Messaging\AbstractMessage;
 use Bitmotion\Mautic\Controller\BackendController;
 use Bitmotion\Mautic\Domain\Model\Dto\YamlConfiguration;
 use Bitmotion\Mautic\Mautic\AuthorizationFactory;
@@ -129,7 +129,7 @@ class MauticAuthorizeService
             );
         }
 
-        if (strpos($this->extensionConfiguration['baseUrl'], 'http:') === 0) {
+        if (str_starts_with($this->extensionConfiguration['baseUrl'], 'http:')) {
             $this->showInsecureConnectionInformation();
 
             return false;
@@ -169,7 +169,7 @@ class MauticAuthorizeService
                 $message ?? ''
             );
 
-            $this->createMessage($message, $title, FlashMessage::ERROR, true);
+            $this->createMessage($message, $title, AbstractMessage::ERROR, true);
 
             return true;
         }
@@ -177,7 +177,7 @@ class MauticAuthorizeService
         return false;
     }
 
-    protected function showCredentialsInformation()
+    protected function showCredentialsInformation(): void
     {
         $missingInformation = [];
         if (empty($this->extensionConfiguration['baseUrl'])) {
@@ -216,7 +216,7 @@ class MauticAuthorizeService
     {
         $title = $title ?: $this->translate('authorization.error.title');
         $message = $this->translate('authorization.error.message.' . $message) ?: $message ?: $this->translate('authorization.error.message');
-        $this->createMessage($message, $title, FlashMessage::ERROR, true);
+        $this->createMessage($message, $title, AbstractMessage::ERROR, true);
     }
 
     protected function addFlashMessage(FlashMessage $message): void
@@ -230,14 +230,14 @@ class MauticAuthorizeService
     {
         $title = $title ?: $this->translate('authorization.warning.title');
         $message = $message ?: $this->translate('authorization.warning.message');
-        $this->createMessage($message, $title, FlashMessage::WARNING, true);
+        $this->createMessage($message, $title, AbstractMessage::WARNING, true);
     }
 
     protected function showSuccessMessage(?string $title = null, ?string $message = null): void
     {
         $title = $title ?: $this->translate('authorization.success.title');
         $message = $message ?: $this->translate('authorization.success.message');
-        $this->createMessage($message, $title, FlashMessage::OK, true);
+        $this->createMessage($message, $title, AbstractMessage::OK, true);
     }
 
     protected function showIncorrectVersionInformation(string $version): void
@@ -262,6 +262,7 @@ class MauticAuthorizeService
     protected function translate(string $key): string
     {
         if (!$this->languageService instanceof LanguageService) {
+            // @todo v12: find alternative for createFromUserPreferences()
             $this->languageService = LanguageService::createFromUserPreferences($GLOBALS['BE_USER']);
         }
         return $this->languageService->sL('LLL:EXT:mautic/Resources/Private/Language/locallang_mod.xlf:' . $key);
@@ -296,9 +297,10 @@ class MauticAuthorizeService
         return $this->extensionConfiguration['expires'] < time();
     }
 
-    public function refreshAccessToken()
+    public function refreshAccessToken(): bool
     {
         try {
+            // @todo v12: refactor
             if ($this->authorization->validateAccessToken() && $this->authorization->accessTokenUpdated()) {
                 $accessTokenData = $this->authorization->getAccessTokenData();
                 $this->extensionConfiguration['accessToken'] = $accessTokenData['access_token'];

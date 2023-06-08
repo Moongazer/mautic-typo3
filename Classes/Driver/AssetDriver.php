@@ -136,7 +136,7 @@ class AssetDriver extends AbstractHierarchicalFilesystemDriver implements Logger
 
     public function fileExists($identifier): bool
     {
-        if (substr($identifier, -1) === '/' || $identifier === '') {
+        if (str_ends_with($identifier, '/') || $identifier === '') {
             return false;
         }
 
@@ -150,7 +150,7 @@ class AssetDriver extends AbstractHierarchicalFilesystemDriver implements Logger
         if ($identifier === self::ROOT_LEVEL_FOLDER) {
             return true;
         }
-        if (substr($identifier, -1) !== '/') {
+        if (!str_ends_with($identifier, '/')) {
             $identifier .= '/';
         }
 
@@ -228,12 +228,12 @@ class AssetDriver extends AbstractHierarchicalFilesystemDriver implements Logger
         return true;
     }
 
-    public function deleteFile($fileIdentifier)
+    public function deleteFile($fileIdentifier): bool
     {
         return $this->removeFileByIdentifier($fileIdentifier);
     }
 
-    public function deleteFolder($folderIdentifier, $deleteRecursively = false)
+    public function deleteFolder($folderIdentifier, $deleteRecursively = false): bool
     {
         return true;
     }
@@ -340,7 +340,7 @@ class AssetDriver extends AbstractHierarchicalFilesystemDriver implements Logger
             $folderIdentifier .= '/';
         }
 
-        return GeneralUtility::isFirstPartOfStr($entryIdentifier, $folderIdentifier);
+        return \str_starts_with($entryIdentifier, $folderIdentifier);
     }
 
     public function getFolderInfoByIdentifier($folderIdentifier): array
@@ -567,9 +567,7 @@ class AssetDriver extends AbstractHierarchicalFilesystemDriver implements Logger
 
         return $queryBuilder
             ->select('*')
-            ->from('sys_file')
-            ->where($queryBuilder->expr()->eq('storage', $this->storageUid))
-            ->execute()
+            ->from('sys_file')->where($queryBuilder->expr()->eq('storage', $this->storageUid))->executeQuery()
             ->fetchAll();
     }
 
@@ -580,24 +578,20 @@ class AssetDriver extends AbstractHierarchicalFilesystemDriver implements Logger
         $file = $queryBuilder
             ->select('*')
             ->from('sys_file')
-            ->where($queryBuilder->expr()->eq('storage', $this->storageUid))
-            ->andWhere($queryBuilder->expr()->eq('identifier', $queryBuilder->createNamedParameter('/' . $identifier)))
-            ->execute()
+            ->where($queryBuilder->expr()->eq('storage', $this->storageUid))->andWhere($queryBuilder->expr()->eq('identifier', $queryBuilder->createNamedParameter('/' . $identifier)))->executeQuery()
             ->fetch();
 
         return ($file === false) ? [] : $file;
     }
 
-    protected function removeFileByIdentifier(string $identifier)
+    protected function removeFileByIdentifier(string $identifier): bool
     {
         $this->normalizeIdentifier($identifier);
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('sys_file');
 
         return (bool)$queryBuilder
             ->delete('sys_file')
-            ->where($queryBuilder->expr()->eq('storage', $this->storageUid))
-            ->andWhere($queryBuilder->expr()->eq('identifier', $queryBuilder->createNamedParameter('/' . $identifier)))
-            ->execute();
+            ->where($queryBuilder->expr()->eq('storage', $this->storageUid))->andWhere($queryBuilder->expr()->eq('identifier', $queryBuilder->createNamedParameter('/' . $identifier)))->executeStatement();
     }
 
     protected function removeFileFromDatabase(int $uid)

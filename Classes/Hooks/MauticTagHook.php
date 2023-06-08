@@ -15,13 +15,17 @@ namespace Bitmotion\Mautic\Hooks;
  ***/
 
 use Bitmotion\Mautic\Domain\Repository\ContactRepository;
+use Doctrine\DBAL\Exception;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Page\PageRenderer;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class MauticTagHook
 {
-    public function setTags(array $params, PageRenderer $pageRenderer)
+    /**
+     * @throws Exception
+     */
+    public function setTags(array $params, PageRenderer $pageRenderer): void
     {
         $page = $GLOBALS['TSFE']->page;
 
@@ -38,6 +42,9 @@ class MauticTagHook
         }
     }
 
+    /**
+     * @throws Exception
+     */
     protected function getTagsToAssign(array $page): array
     {
         $pageUid = $page['_PAGES_OVERLAY_UID'] ?? $page['uid'];
@@ -45,20 +52,16 @@ class MauticTagHook
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_mautic_page_tag_mm');
         $result = $queryBuilder
             ->select('uid_foreign')
-            ->from('tx_mautic_page_tag_mm')
-            ->where($queryBuilder->expr()->eq('uid_local', $pageUid))
-            ->execute();
+            ->from('tx_mautic_page_tag_mm')->where($queryBuilder->expr()->eq('uid_local', $pageUid))->executeQuery();
 
         $tags = [];
 
-        while ($tag = $result->fetchColumn()) {
+        while ($tag = $result->fetchOne()) {
             $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_mautic_domain_model_tag');
             $tags[$tag] = $queryBuilder
                 ->select('title')
-                ->from('tx_mautic_domain_model_tag')
-                ->where($queryBuilder->expr()->eq('uid', $tag))
-                ->execute()
-                ->fetchColumn();
+                ->from('tx_mautic_domain_model_tag')->where($queryBuilder->expr()->eq('uid', $tag))->executeQuery()
+                ->fetchOne();
         }
 
         return $tags;

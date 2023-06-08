@@ -14,9 +14,11 @@ namespace Bitmotion\Mautic\Domain\Repository;
  *
  ***/
 
-use Doctrine\DBAL\DBALException;
+use Doctrine\DBAL\Exception;
+use TYPO3\CMS\Core\Context\Context;
 use Mautic\Api\Segments;
 use Mautic\Exception\ContextNotFoundException;
+use TYPO3\CMS\Core\Context\Exception\AspectNotFoundException;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
@@ -43,7 +45,7 @@ class SegmentRepository extends AbstractRepository
     }
 
     /**
-     * @throws DBALException
+     * @throws Exception|AspectNotFoundException
      */
     public function initializeSegments()
     {
@@ -57,25 +59,25 @@ class SegmentRepository extends AbstractRepository
         $this->synchronizeSegments();
     }
 
+    /**
+     * @throws AspectNotFoundException
+     * @throws Exception
+     */
     public function synchronizeSegments()
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
             ->getQueryBuilderForTable('tx_marketingautomation_segment');
         $queryBuilder->getRestrictions()->removeAll();
 
-        $result = $queryBuilder->select('*')
-            ->from('tx_marketingautomation_segment')
-            ->execute();
+        $result = $queryBuilder->select('*')->from('tx_marketingautomation_segment')->executeQuery();
 
         $availableSegments = [];
-        while ($row = $result->fetch()) {
+        while ($row = $result->fetchOne()) {
             $availableSegments[$row['uid']] = $row;
         }
-        $result->closeCursor();
+        $result->closeCursor(); // @todo v12: check functionality, refactor or remove
 
-        $queryBuilder->update('tx_marketingautomation_segment')
-            ->set('deleted', 1)
-            ->execute();
+        $queryBuilder->update('tx_marketingautomation_segment')->set('deleted', 1)->executeStatement();
 
         $segments = $this->findAll();
         foreach ($segments as $segment) {
@@ -84,23 +86,19 @@ class SegmentRepository extends AbstractRepository
             if (!empty($segment['dateModified'])) {
                 $dateModified = \DateTime::createFromFormat('Y-m-d\TH:i:sP', $segment['dateModified']);
             } else {
-                $dateModified = \DateTime::createFromFormat('U', (string)$GLOBALS['EXEC_TIME']);
+                $dateModified = \DateTime::createFromFormat('U', (string)GeneralUtility::makeInstance(Context::class)->getPropertyFromAspect('date', 'timestamp'));
             }
 
             if (!isset($availableSegments[$segment['id']])) {
                 $insertQueryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
                     ->getQueryBuilderForTable('tx_marketingautomation_segment');
-                $insertQueryBuilder->insert('tx_marketingautomation_segment')
-                    ->values(
-                        [
-                            'uid' => (int)$segment['id'],
-                            'crdate' => $dateAdded->getTimestamp(),
-                            'tstamp' => $dateModified->getTimestamp(),
-                            'deleted' => (int)!$segment['isPublished'],
-                            'title' => $segment['name'],
-                        ]
-                    )
-                    ->execute();
+                $insertQueryBuilder->insert('tx_marketingautomation_segment')->values([
+                    'uid' => (int)$segment['id'],
+                    'crdate' => $dateAdded->getTimestamp(),
+                    'tstamp' => $dateModified->getTimestamp(),
+                    'deleted' => (int)!$segment['isPublished'],
+                    'title' => $segment['name'],
+                ])->executeStatement();
             } else {
                 $updateQueryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)
                     ->getQueryBuilderForTable('tx_marketingautomation_segment');
@@ -113,9 +111,7 @@ class SegmentRepository extends AbstractRepository
                     )
                     ->set('crdate', $dateAdded->getTimestamp())
                     ->set('tstamp', $dateModified->getTimestamp())
-                    ->set('deleted', (int)!$segment['isPublished'])
-                    ->set('title', $segment['name'])
-                    ->execute();
+                    ->set('deleted', (int)!$segment['isPublished'])->set('title', $segment['name'])->executeStatement();
             }
         }
     }

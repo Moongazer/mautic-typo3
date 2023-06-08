@@ -1,6 +1,6 @@
 <?php
 
-defined('TYPO3_MODE') || die;
+defined('TYPO3') || die;
 
 call_user_func(function () {
     if (\TYPO3\CMS\Core\Core\Environment::isComposerMode() === false) {
@@ -82,13 +82,13 @@ call_user_func(function () {
     //#################
     //   EXTRACTOR    #
     //#################
-    \TYPO3\CMS\Core\Resource\Index\ExtractorRegistry::getInstance()->registerExtractionService(\Bitmotion\Mautic\Index\Extractor::class);
+    \TYPO3\CMS\Core\Utility\GeneralUtility::makeInstance(\TYPO3\CMS\Core\Resource\Index\ExtractorRegistry::class)->registerExtractionService(\Bitmotion\Mautic\Index\Extractor::class);
 
     //##################
     //      PLUGIN     #
     //##################
     \TYPO3\CMS\Extbase\Utility\ExtensionUtility::configurePlugin(
-        'Bitmotion.mautic',
+        'Mautic',
         'Form',
         [\Bitmotion\Mautic\Controller\FrontendController::class => 'form'],
         [\Bitmotion\Mautic\Controller\FrontendController::class => 'form'],

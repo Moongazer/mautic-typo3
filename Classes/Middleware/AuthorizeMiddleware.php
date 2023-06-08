@@ -14,6 +14,8 @@ namespace Bitmotion\Mautic\Middleware;
  *
  ***/
 
+use GuzzleHttp\Utils;
+use TYPO3\CMS\Core\Context\Exception\AspectNotFoundException;
 use Bitmotion\Mautic\Domain\Model\Dto\YamlConfiguration;
 use Bitmotion\Mautic\Domain\Repository\SegmentRepository;
 use Bitmotion\Mautic\Domain\Repository\TagRepository;
@@ -28,7 +30,6 @@ use Psr\Http\Server\MiddlewareInterface;
 use Psr\Http\Server\RequestHandlerInterface;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
-use Symfony\Component\Serializer\Exception\InvalidArgumentException;
 use TYPO3\CMS\Core\Context\Context;
 use TYPO3\CMS\Core\Context\UserAspect;
 use TYPO3\CMS\Core\Http\Response;
@@ -44,11 +45,14 @@ class AuthorizeMiddleware implements MiddlewareInterface, LoggerAwareInterface
 
     protected $state;
 
+    /**
+     * @throws AspectNotFoundException
+     */
     public function process(ServerRequestInterface $request, RequestHandlerInterface $handler): ResponseInterface
     {
         $path = $request->getUri()->getPath();
 
-        if (strpos($path, self::PATH) !== 0) {
+        if (!str_starts_with($path, self::PATH)) {
             return $handler->handle($request);
         }
 
@@ -112,6 +116,7 @@ class AuthorizeMiddleware implements MiddlewareInterface, LoggerAwareInterface
                     $this->updateExtensionConfiguration($accessTokenData);
                 }
 
+                // @todo v12: remove ObjectManager, use DI
                 /** @var ObjectManager $objectManager */
                 $objectManager = GeneralUtility::makeInstance(ObjectManager::class);
                 $objectManager->get(SegmentRepository::class)->initializeSegments();
@@ -121,12 +126,12 @@ class AuthorizeMiddleware implements MiddlewareInterface, LoggerAwareInterface
             }
         } catch (UnexpectedResponseFormatException $exception) {
             try {
-                $errors = \GuzzleHttp\json_decode($exception->getResponse()->getBody(), true)['errors'];
+                $errors = Utils::jsonDecode($exception->getResponse()->getBody(), true)['errors'];
                 $error = array_shift($errors);
 
                 $title = sprintf('Error %d', $error['code']);
                 $message = $error['message'];
-            } catch (InvalidArgumentException $exception) {
+            } catch (\GuzzleHttp\Exception\InvalidArgumentException $exception) {
                 $title = $this->translate('authorization.error.title.invalid_response');
                 $message = $this->translate('authorization.error.message.invalid_response');
             }

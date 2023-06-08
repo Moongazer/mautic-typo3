@@ -16,6 +16,7 @@ namespace Bitmotion\Mautic\Domain\Model\FormElement;
 
 use Bitmotion\Mautic\Mautic\AuthorizationFactory;
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception;
 use Psr\Log\LoggerAwareInterface;
 use Psr\Log\LoggerAwareTrait;
 use TYPO3\CMS\Core\Database\ConnectionPool;
@@ -30,17 +31,17 @@ class CountryListFormElement extends GenericFormElement implements LoggerAwareIn
     /**
      * @var string
      */
-    protected $baseUrl;
+    protected string $baseUrl;
 
     /**
      * @var string
      */
-    protected $countryFile = '/app/bundles/CoreBundle/Assets/json/countries.json';
+    protected string $countryFile = '/app/bundles/CoreBundle/Assets/json/countries.json';
 
     /**
      * @var string
      */
-    protected $locale;
+    protected string $locale;
 
     public function __construct(
         string $identifier,
@@ -89,6 +90,7 @@ class CountryListFormElement extends GenericFormElement implements LoggerAwareIn
 
     /**
      * Mautic does not return localized country names, so we use EXT:static_info_tables for this.
+     * @throws Exception
      */
     protected function localizeCountries(array &$countries)
     {
@@ -96,15 +98,11 @@ class CountryListFormElement extends GenericFormElement implements LoggerAwareIn
             $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('static_countries');
             $countryNames = $queryBuilder
                 ->select('*')
-                ->from('static_countries')
-                ->where(
-                    $queryBuilder->expr()->in(
-                        'cn_short_en',
-                        $queryBuilder->createNamedParameter(array_keys($countries), Connection::PARAM_STR_ARRAY)
-                    )
-                )
-                ->execute()
-                ->fetchAll();
+                ->from('static_countries')->where($queryBuilder->expr()->in(
+                'cn_short_en',
+                $queryBuilder->createNamedParameter(array_keys($countries), Connection::PARAM_STR_ARRAY)
+            ))->executeQuery()
+                ->fetchAllAssociative();
 
             foreach ($countryNames as $countryName) {
                 if (!empty($countryName['cn_short_' . $this->locale])) {

@@ -15,11 +15,15 @@ namespace Bitmotion\Mautic\Domain\Repository;
  ***/
 
 use Doctrine\DBAL\Connection;
+use Doctrine\DBAL\Exception;
 use TYPO3\CMS\Core\Database\ConnectionPool;
 use TYPO3\CMS\Core\Utility\GeneralUtility;
 
 class PersonaRepository
 {
+    /**
+     * @throws Exception
+     */
     public function findBySegments(array $segments): array
     {
         $queryBuilder = GeneralUtility::makeInstance(ConnectionPool::class)->getQueryBuilderForTable('tx_marketingautomation_persona');
@@ -38,10 +42,8 @@ class PersonaRepository
                     $queryBuilder->createNamedParameter($segments, Connection::PARAM_INT_ARRAY)
                 )
             )
-            ->orderBy('persona.sorting')
-            ->setMaxResults(1)
-            ->execute()
-            ->fetchAll();
+            ->orderBy('persona.sorting')->setMaxResults(1)->executeQuery()
+            ->fetchAllAssociative();
 
         return $persona[0] ?? [];
     }

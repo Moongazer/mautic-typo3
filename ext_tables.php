@@ -1,6 +1,6 @@
 <?php
 
-defined('TYPO3_MODE') || die;
+defined('TYPO3') || die;
 
 call_user_func(
     function ($extensionKey) {
@@ -20,19 +20,13 @@ call_user_func(
             'Mautic'
         );
 
-        // Backend Module
-        if (version_compare(TYPO3_version, '10.0.0', '<')) {
-            $extensionName = 'Bitmotion.Mautic';
-            $controllerName = 'Backend';
-        }
-
         \TYPO3\CMS\Extbase\Utility\ExtensionUtility::registerModule(
-            $extensionName ?? $extensionKey,
+            $extensionKey,
             'tools',
             'api',
             'bottom',
             [
-                $controllerName ?? \Bitmotion\Mautic\Controller\BackendController::class => 'show, save',
+                \Bitmotion\Mautic\Controller\BackendController::class => 'show, save',
             ],
             [
                 'access' => 'admin',

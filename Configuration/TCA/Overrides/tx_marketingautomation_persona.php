@@ -1,7 +1,7 @@
 <?php
 
 declare(strict_types=1);
-defined('TYPO3_MODE') || die();
+defined('TYPO3') || die();
 
 $tempColumns = [
     'tx_marketingautomation_segments' => [
