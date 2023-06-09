@@ -13,7 +13,7 @@ namespace Bitmotion\Mautic\Middleware;
  *  (c) 2023 Leuchtfeuer Digital Marketing <dev@leuchtfeuer.com>
  *
  ***/
-
+use GuzzleHttp\Exception\InvalidArgumentException;
 use GuzzleHttp\Utils;
 use TYPO3\CMS\Core\Context\Exception\AspectNotFoundException;
 use Bitmotion\Mautic\Domain\Model\Dto\YamlConfiguration;
@@ -131,7 +131,7 @@ class AuthorizeMiddleware implements MiddlewareInterface, LoggerAwareInterface
 
                 $title = sprintf('Error %d', $error['code']);
                 $message = $error['message'];
-            } catch (\GuzzleHttp\Exception\InvalidArgumentException $exception) {
+            } catch (InvalidArgumentException $exception) {
                 $title = $this->translate('authorization.error.title.invalid_response');
                 $message = $this->translate('authorization.error.message.invalid_response');
             }

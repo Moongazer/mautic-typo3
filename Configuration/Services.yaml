@@ -10,8 +10,8 @@ services:
   Bitmotion\Mautic\Hooks\MauticFormHook:
     public: true
 
-  Bitmotion\Mautic\EventListener\SynchronizeMauticData:
-    tags:
-      - name: event.listener
-        identifier: synchronizeMauticData
-        event: TYPO3\CMS\Backend\Controller\Event\AfterFormEnginePageInitializedEvent
+#  Bitmotion\Mautic\EventListener\SynchronizeMauticData:
+#    tags:
+#      - name: event.listener
+#        identifier: synchronizeMauticData
+#        event: TYPO3\CMS\Backend\Controller\Event\AfterFormEnginePageInitializedEvent

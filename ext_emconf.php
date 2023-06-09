@@ -8,16 +8,16 @@ $EM_CONF['mautic'] = [
     'author' => 'Florian Wessels, Jurian Jansen',
     'author_company' => 'Leuchtfeuer Digital Marketing',
     'author_email' => 'dev@leuchtfeuer.com',
-    'version' => '4.3.0',
+    'version' => '4.4.0',
     'constraints' => [
         'depends' => [
-            'typo3' => '10.4.2-11.5.99',
-            'marketing_automation' => '1.2.3-1.3.99',
+            'typo3' => '12.4.0-12.4.99',
+            'marketing_automation' => '1.3.0-1.3.99',
         ],
         'conflicts' => [],
         'suggests' => [
             'static_info_tables' => '6.7.0',
-            'form' => '10.4.0',
+            'form' => '12.4.0',
         ],
     ],
 ];

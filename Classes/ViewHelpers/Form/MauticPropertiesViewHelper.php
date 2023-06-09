@@ -18,6 +18,7 @@ use Bitmotion\Mautic\Domain\Repository\FieldRepository;
 use TYPO3\CMS\Core\Localization\LanguageService;
 use TYPO3\CMS\Fluid\ViewHelpers\Form\SelectViewHelper;
 
+// @todo v12: copy the final class code (see https://docs.typo3.org/c/typo3/cms-core/main/en-us/Changelog/11.5/Important-95298-FluidViewhelpersWillBeDeclaredFinalInV12.html)
 class MauticPropertiesViewHelper extends SelectViewHelper
 {
     protected $fieldRepository;
@@ -60,7 +61,7 @@ class MauticPropertiesViewHelper extends SelectViewHelper
         return $options;
     }
 
-    protected function renderOptionTag($value, $label, $isSelected)
+    protected function renderOptionTag(string $value, string $label, bool $isSelected): string
     {
         $output = '<option value="' . htmlspecialchars($value) . '"';
         if ($isSelected) {
